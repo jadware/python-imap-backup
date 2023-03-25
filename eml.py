@@ -34,46 +34,56 @@ def processMailDir(client, mailDir, path):
 	
 	messages = client.search(['ALL']);
 	
-	items = client.fetch(messages, ['UID']).items();
+	chunk = 100;
 	
-	for uid, message_data in items:
-		print("#" + str(uid), end='');
+	for i in range(0, len(messages), chunk):
 		
-		# pull message and envelope
-		item = client.fetch([uid], ['ENVELOPE', 'RFC822'])[uid];
+		items = client.fetch(messages[i:i + chunk], ['UID']).items();
 		
-		# extract envelope
-		envelope = item[b'ENVELOPE'];
-		
-		# pull date the message was received
-		date_received = envelope.date;
-		
-		# extract message content
-		msg = email.message_from_bytes(item[b'RFC822']);
-		
-		# decode subject into a string, though it probably should be unicode not utf
-		subject = envelope.subject.decode();
-		
-		# extract bytes
-		smsg = msg.as_bytes().decode(encoding = 'ISO-8859-1')
-		
-		# measure size
-		size = len(smsg);
-		
-		date_utc = date_received.replace(tzinfo=timezone.utc).strftime("%Y-%m-%d %H%M%S");
-		
-		# build filename
-		filename = date_utc + ' - ' + str(uid);
+		for uid, message_data in items:
+			print("#" + str(uid), end='');
+			
+			# pull message and envelope
+			item = client.fetch([uid], ['ENVELOPE', 'RFC822'])[uid];
+			
+			# extract envelope
+			envelope = item[b'ENVELOPE'];
+			
+			# pull date the message was received
+			date_received = envelope.date;
+			
+			# extract message content
+			msg = email.message_from_bytes(item[b'RFC822']);
+			
+			# decode subject into a string, though it probably should be unicode not utf
+			if envelope.subject is None:
+				subject = "(None)";
+			else:
+				subject = envelope.subject.decode();
+			
+			# extract bytes
+			smsg = msg.as_bytes().decode(encoding = 'ISO-8859-1')
+			
+			# measure size
+			size = len(smsg);
+			
+			if date_received is None:
+				date_utc = "(None)";
+			else:
+				date_utc = date_received.replace(tzinfo=timezone.utc).strftime("%Y-%m-%d %H%M%S");
+			
+			# build filename
+			filename = date_utc + ' - ' + str(uid);
 
-		# write the email to disk
-		writeEML(dirname + '/' + path, filename, smsg, date_received)
-		
-		if size > 1024 * 1024 * 2:
-			print(Fore.RED, end='');
-		elif size > 1024 * 100:
-			print(Fore.YELLOW, end='');
-		
-		print("\t" + sizefmt(size) + Style.RESET_ALL + "\t{0}\t{1}".format(date_received, ellipsize(subject, 48)));
+			# write the email to disk
+			writeEML(dirname + '/' + path, filename, smsg, date_received)
+			
+			if size > 1024 * 1024 * 2:
+				print(Fore.RED, end='');
+			elif size > 1024 * 100:
+				print(Fore.YELLOW, end='');
+			
+			print("\t" + sizefmt(size) + Style.RESET_ALL + "\t{0}\t{1}".format(date_received, ellipsize(subject, 48)));
 
 	return;
 

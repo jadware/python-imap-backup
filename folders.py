@@ -39,8 +39,6 @@ with IMAPClient(host=server, ssl=True) as client:
 		if not os.path.exists(path):
 			os.makedirs(path);
 
-		processMailDir(client, name, path);
-		
 		try:
 			select_info = client.select_folder(name);
 			num_messages_in_folder = select_info[b'EXISTS'];
@@ -51,3 +49,4 @@ with IMAPClient(host=server, ssl=True) as client:
 			print(" (does not exist)");
 			logging.warning("could not pull folder \"" + name + "\" because could not select");
 			
+		
