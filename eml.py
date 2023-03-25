@@ -1,18 +1,29 @@
+import time
+import datetime
+from datetime import timezone
+import filedate
 import os
 import email
 import colorama
 from colorama import Fore, Back, Style
 
 
-def writeEML(path, filename, msg):
+def writeEML(path, filename, msg, date_received):
+	full_path = path + '/' + filename + '.eml';
 	
-	os.chdir(path);
-
-	fw = open(path + '/' + filename + '.eml', 'w', encoding="utf-8");
-	fw.write(msg);
-	fw.close();
-
-	return
+	# write the message to disk with UTF-8 encoding - should this be unicode?
+	with open(full_path, 'w', encoding="utf-8") as fw:
+		fw.write(msg);
+		fw.flush();
+	
+	file = filedate.File(full_path);
+	file.set(
+		created = date_received,
+		modified = date_received,
+		accessed = date_received
+	);
+	
+	return;
 
 
 def processMailDir(client, mailDir, path):
@@ -49,12 +60,13 @@ def processMailDir(client, mailDir, path):
 		# measure size
 		size = len(smsg);
 		
+		date_utc = date_received.replace(tzinfo=timezone.utc).strftime("%Y-%m-%d %H%M%S");
+		
 		# build filename
-		filename = str(uid);
+		filename = date_utc + ' - ' + str(uid);
 
 		# write the email to disk
-		writeEML(dirname + '/' + path, filename, smsg)
-		
+		writeEML(dirname + '/' + path, filename, smsg, date_received)
 		
 		if size > 1024 * 1024 * 2:
 			print(Fore.RED, end='');
@@ -62,7 +74,7 @@ def processMailDir(client, mailDir, path):
 			print(Fore.YELLOW, end='');
 		
 		print("\t" + sizefmt(size) + Style.RESET_ALL + "\t{0}\t{1}".format(date_received, ellipsize(subject, 48)));
-		return;
+
 	return;
 
 
